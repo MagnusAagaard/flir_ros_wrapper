@@ -4,7 +4,7 @@ This package is a ROS wrapper for Flir Ax5 thermal cameras (e.g. A65). The packa
 ## Package use
 Note that Spinakker SDK should be setup correctly before using the package as described below under "Spinakker SDK setup".
 To launch the camera connect it properly and run
-```console
+```shell script
 roslaunch flir_ros_wrapper flir_node.launch
 ```
 This will launch the camera and publish image messages. Settings and parameters can be specified in the launch file.
@@ -33,7 +33,7 @@ Navigate to the spinnaker-2.5... directory and run the installation
 ```shell script
 sudo sh install_spinnaker.sh
 ```
-Follow the installation procedure.
+Follow the installation procedure.\
 Next install the Python wrapper by running the wheel
 ```shell script
 python3 -m pip install spinnaker_python-2.5.0.80-cp36-cp36m-linux_x86_64.whl
@@ -50,24 +50,26 @@ sudo sysctl -w net.ipv4.conf.all.rp_filter=0
 sudo sysctl -w net.ipv4.conf.default.rp_filter=0
 ```
 If you don't want to disable RPF every time you have rebooted and need to use the camera, this can also be permanently disabled, but this also decrease security of your system, so be aware.
+
 To __PERMANENTLY__ disable reverse path filtering:
 sudo gedit /etc/sysctl.d/10-network-security.conf
 ```shell script
 sudo gedit /etc/sysctl.d/10-network-security.conf
 ```
 and then comment out the lines below:
-    # Turn on Source Address Verification in all interfaces to
-    # in order to prevent some spoofing attacks.
-    ## net.ipv4.conf.default.rp_filter=1
-    ## net.ipv4.conf.all.rp_filter=1
+>    \# Turn on Source Address Verification in all interfaces to\
+>    \# in order to prevent some spoofing attacks.\
+>    \## net.ipv4.conf.default.rp_filter=1\
+>    \## net.ipv4.conf.all.rp_filter=1
+
 and then reboot the computer (only for permanently disabling)
 
 ### Setup wired connection correctly
 To connect to the Flir Ax5 camera through Ethernet cable the wired connection must be set up correctly. An easy way to do this is to open the Settings and go to Network and into Wired settings. Go to IPv4 tab and change the settings to "Link-Local Only". This will make sure the camera connects on the right subnet and so on.
-![alt text](https://github.com/MagnusAagaard/flir_ros_wrapper/raw/images/linklocal.png "Link-Local Only settings")
+![Link-Local Only settings](https://github.com/MagnusAagaard/flir_ros_wrapper/raw/main/images/linklocal.png "Link-Local Only settings")
 To make sure the camera is connected properly (as the Flir Ax5 might be expecting a diffrent subnet and IP by default) open up SpinView
 ```shell script
 spinview
 ```
 Or run the binary at '/opt/spinnaker/bin/SpinView_QT' if the paths were not chosen to be set up in the installation process. If the device is on a wrong subnet, the device will show an error saying this. Simply right click the interface and click “Auto Force IP” which should change the default IP that the camera expects. It is now ready to use.
-![alt text](https://github.com/MagnusAagaard/flir_ros_wrapper/raw/images/spinview.png "Spinview wrong subnet error")
+![Spinview wrong subnet error](https://github.com/MagnusAagaard/flir_ros_wrapper/raw/main/images/spinview.png "Spinview wrong subnet error")
