@@ -1,0 +1,12 @@
+<launch>
+  <arg name="frame_rate"            default="30" />
+  <arg name="cam_idx"               default="0" />
+  <arg name="debug"                 default="False" />
+
+  <!-- Launch Flir node Interfacer -->
+  <node name="flir_node" pkg="flir_ros_wrapper" type="flir_node.py" output="screen" >
+    <param name="frame_rate"            value="$(arg frame_rate)"/>
+    <param name="cam_idx"               value="$(arg cam_idx)" />
+    <param name="debug"                 value="$(arg debug)" />
+  </node>
+</launch>
