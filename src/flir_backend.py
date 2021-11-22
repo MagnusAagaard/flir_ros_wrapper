@@ -6,9 +6,9 @@ import numpy
 _continue_recording_backend_value = True
 
 class FlirCamera:
-    def __init__(self, cam_idx=0, acquisition_mode='cont'):
+    def __init__(self, cam_idx=0, convert_to_celcius=True):
         self.cam_idx = cam_idx
-        self.acquisition_mode = acquisition_mode
+        self.convert_to_celcius = convert_to_celcius
         self.init_success = self.__init_cams()
         print("Init done with result {}".format(self.init_success))
 
@@ -76,10 +76,9 @@ class FlirCamera:
                 result = False
             else:
                 # Getting the image data as a numpy array
-                image_data = image_result.GetNDArray()
-                image_data_celsius = image_data * 0.04 - 273.15
-                image = image_data_celsius
-                #max_celsius = numpy.max(image_data_celsius)
+                image = image_result.GetNDArray()
+                if self.convert_to_celcius:
+                    image = image * 0.04 - 273.15
             #  Release image
             #
             #  *** NOTES ***

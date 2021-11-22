@@ -2,7 +2,10 @@
   <arg name="frame_rate"            default="30" />
   <arg name="cam_idx"               default="0" />
   <arg name="debug"                 default="False" />
-  <arg name="acquisition_mode"      default="cont" />
+  <!-- Acquisition mode can either be 'continous' or 'trigger'.
+  If in trigger mode, a topic is available to trigger the camera and acquire the image -->
+  <arg name="acquisition_mode"      default="continous" />
+  <arg name="to_celcius"            default="True" />
 
   <!-- Launch Flir node Interfacer -->
   <node name="flir_node" pkg="flir_ros_wrapper" type="flir_node.py" output="screen" >
@@ -10,5 +13,6 @@
     <param name="cam_idx"               value="$(arg cam_idx)" />
     <param name="debug"                 value="$(arg debug)" />
     <param name="acquisition_mode"      value="$(arg acquisition_mode)" />
+    <param name="to_celcius"            value="$(arg to_celcius)" />
   </node>
 </launch>
