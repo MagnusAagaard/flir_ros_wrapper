@@ -22,4 +22,4 @@ uint32 width          # image width, that is, number of columns
 string encoding       # Encoding of pixels -- default 14bit
 
 uint8 is_celcius      # is this data converted to celcius?
-uint32[] data         # actual matrix data, size is (height * width)
+float32[] data        # actual matrix data, size is (height * width)
