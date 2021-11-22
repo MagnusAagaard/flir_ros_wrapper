@@ -15,10 +15,6 @@ Header header        # Header timestamp should be acquisition time of image
 uint32 height         # image height, that is, number of rows
 uint32 width          # image width, that is, number of columns
 
-# The legal values for encoding are in file src/image_encodings.cpp
-# If you want to standardize a new string format, join
-# ros-users@lists.sourceforge.net and send an email proposing a new encoding.
-
 string encoding       # Encoding of pixels -- default 14bit
 
 uint8 is_celcius      # is this data converted to celcius?
