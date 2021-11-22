@@ -6,8 +6,9 @@ import numpy
 _continue_recording_backend_value = True
 
 class FlirCamera:
-    def __init__(self, cam_idx=0):
+    def __init__(self, cam_idx=0, acquisition_mode='cont'):
         self.cam_idx = cam_idx
+        self.acquisition_mode = acquisition_mode
         self.init_success = self.__init_cams()
         print("Init done with result {}".format(self.init_success))
 
@@ -28,13 +29,12 @@ class FlirCamera:
             print('Cam index is larger than number of cameras detected.. Running camera 0 instead.')
             self.cam_idx = 0
         self.cam = self.cam_list[self.cam_idx]
-        self.nodemap_tldevice = self.cam.GetTLDeviceNodeMap()
         # Initialize camera
         self.cam.Init()
         # Retrieve GenICam nodemap
         self.nodemap = self.cam.GetNodeMap()
         # Setup parameters
-        result = self.setup_parameters(self.cam, self.nodemap, self.nodemap_tldevice)
+        result = self.setup_parameters(self.cam, self.nodemap)
         if not result:
             self.shutdown()
         else:
@@ -45,9 +45,12 @@ class FlirCamera:
         print('Shutting down..')
         #  Ending acquisition appropriately helps ensure that devices clean up
         #  properly and do not need to be power-cycled to maintain integrity.
-        self.cam.EndAcquisition()
-        # Deinitialize camera
-        self.cam.DeInit()
+        try:
+            self.cam.EndAcquisition()
+            # Deinitialize camera
+            self.cam.DeInit()
+        except PySpin.SpinnakerException as ex:
+            print('Error: %s' % ex)
         # Delete instance
         del self.cam
         # Clear camera list before releasing system
@@ -90,13 +93,12 @@ class FlirCamera:
 
         return result, image
 
-    def setup_parameters(self, cam, nodemap, nodemap_tldevice):
+    def setup_parameters(self, cam, nodemap):
         # Set thermal properties of the Flir camera
         if not self.set_thermal_properties(nodemap):
             print("Unable to set thermal properties")
             return False
         # Set buffer handling of the Flir camera
-        #sNodemap = cam.GetTLStreamNodeMap()
         if not self.set_buffer_handling(cam.GetTLStreamNodeMap()):
             print("Unable to set buffer handling")
             return False
