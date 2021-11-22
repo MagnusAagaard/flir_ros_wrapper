@@ -7,6 +7,7 @@ from flir_backend import FlirCamera
 
 from std_msgs.msg import Header, Bool
 from flir_ros_wrapper.msg import ThermalImage
+import matplotlib.pyplot as plt
 
 class FlirCameraNode:
     def __init__(self):
@@ -68,6 +69,15 @@ class FlirCameraNode:
             self.img_pub.publish(img)
             if self.debug:
                 rospy.loginfo('Maximum temperature in frame: {}'.format(np.max(image_data)))
+                #image_data_unpacked = img.data.reshape((img.height, img.width))
+                # Draws an image on the current figure
+                plt.imshow(image_data, cmap='inferno')
+                plt.colorbar(format='%.2f')
+                # Interval in plt.pause(interval) determines how fast the images are displayed in a GUI
+                # Interval is in seconds.
+                plt.pause(0.001)
+                # Clear current reference of a figure. This will improve display speed significantly
+                plt.clf()
         else:
             if self.debug:
                 rospy.loginfo('Unable to acquire image..')
