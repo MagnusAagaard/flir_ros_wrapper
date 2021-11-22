@@ -1,33 +1,61 @@
 #!/usr/bin/env python3
 import PySpin
+import sys
 import rospy
 import numpy as np
 from flir_backend import FlirCamera
 
-from std_msgs.msg import Header
+from std_msgs.msg import Header, Bool
 from flir_ros_wrapper.msg import ThermalImage
 
 class FlirCameraNode:
     def __init__(self):
         self.__get_params()
-        #self.__init_subscribers()
+        self.__init_subscribers()
         self.__init_publishers()
         self.cam = FlirCamera(cam_idx = self.cam_idx, convert_to_celcius=self.convert_to_celcius)
 
     def __get_params(self):
         # Default cam_idx = 0
         self.cam_idx = rospy.get_param('~cam_idx', 0)
+        # Get rate
+        rate = rospy.get_param('~frame_rate', 30)
+        self.rate = rospy.Rate(rate)
         self.debug = rospy.get_param('~debug', False)
         # Default acquisition_mode is continous
         self.acquisition_mode = rospy.get_param('~acquisition_mode', 'cont')
         self.publish_topic = rospy.get_param('~publish_topic', '~image_raw')
+        self.trigger_topic = rospy.get_param('~trigger_topic','')
+        if not self.trigger_topic and self.acquisition_mode == 'trigger':
+            rospy.logerr('Parameter \'trigger_topic\' is not provided and acquisition mode is set to trigger..')
+            sys.exit(-1)
         self.convert_to_celcius = rospy.get_param('~to_celcius', True)
 
     def __init_publishers(self):
         # Setup publisher
         self.img_pub = rospy.Publisher(self.publish_topic, ThermalImage, queue_size=1)
 
-    def run_and_publish(self):
+    def __init_subscribers(self):
+        # Setup subscribers
+        rospy.Subscriber(self.trigger_topic, Bool, self.__trigger_cb, queue_size=1)
+
+    def __trigger_cb(self, msg):
+        # Trigger initiated, acquire and publish image
+        if msg.data == True:
+            self.acquire_and_publish()
+
+    def run(self):
+        if self.acquisition_mode == 'continous':
+            while not rospy.is_shutdown():
+                self.acquire_and_publish()
+                self.rate.sleep()
+        elif self.acquisition_mode == 'trigger':
+            rospy.spin()
+        else:
+            rospy.logerr('Acquisition mode was not set to either continous or trigger.. Exiting..')
+        self.cam.shutdown()
+
+    def acquire_and_publish(self):
         # Acquire image and publish
         result, image_data = self.cam.acquire_image()
         if result:
@@ -46,17 +74,11 @@ class FlirCameraNode:
 
 def main():
     rospy.init_node('flir_cam_node', log_level=rospy.INFO)
-    # Get rate
-    rate = rospy.get_param('~frame_rate', 30)
-    r = rospy.Rate(rate)
     # Instantiate class
     flir_cam_node = FlirCameraNode()
     if flir_cam_node.cam.init_success:
         rospy.loginfo('Camera initialized, running..')
-        while not rospy.is_shutdown():
-            flir_cam_node.run_and_publish()
-            r.sleep()
-        flir_cam_node.cam.shutdown()
+        flir_cam_node.run()
     else:
         rospy.loginfo('Unable to initialize camera. Exiting.')
         
