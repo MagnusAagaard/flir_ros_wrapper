@@ -6,6 +6,7 @@ import numpy as np
 from flir_backend import FlirCamera
 
 from std_msgs.msg import Header, Bool
+from sensor_msgs.msg import Image
 from flir_ros_wrapper.msg import ThermalImage
 import matplotlib.pyplot as plt
 
@@ -14,7 +15,7 @@ class FlirCameraNode:
         self.__get_params()
         self.__init_subscribers()
         self.__init_publishers()
-        self.cam = FlirCamera(cam_idx = self.cam_idx, convert_to_celcius=self.convert_to_celcius)
+        self.cam = FlirCamera(cam_idx = self.cam_idx, img_format=self.img_format)
 
     def __get_params(self):
         # Default cam_idx = 0
@@ -25,16 +26,31 @@ class FlirCameraNode:
         self.debug = rospy.get_param('~debug', False)
         # Default acquisition_mode is continous
         self.acquisition_mode = rospy.get_param('~acquisition_mode', 'cont')
+        # Topic to publish data
         self.publish_topic = rospy.get_param('~publish_topic', '~image_raw')
+        # Topic to trigger acquisition
         self.trigger_topic = rospy.get_param('~trigger_topic','')
         if not self.trigger_topic and self.acquisition_mode == 'trigger':
             rospy.logerr('Parameter \'trigger_topic\' is not provided and acquisition mode is set to trigger..')
             sys.exit(-1)
+        # Wether to convert data to celcius or not
         self.convert_to_celcius = rospy.get_param('~to_celcius', True)
+        # Image format either mono8 for visualization in Rviz or mono14 for reliable thermal data
+        self.img_format = rospy.get_param('~img_format', 'mono14')
+        if self.convert_to_celcius and not self.img_format == 'mono14':
+            rospy.logwarn('Parameter \'to_celcius\' is set to true, but \'img_format\' is not set to \'mono14\'.. Changing \'img_format\' to \'mono14\'...')
+            self.img_format = 'mono14'
+        
 
     def __init_publishers(self):
         # Setup publisher
-        self.img_pub = rospy.Publisher(self.publish_topic, ThermalImage, queue_size=1)
+        if self.img_format == 'mono14':
+            self.img_pub = rospy.Publisher(self.publish_topic, ThermalImage, queue_size=1)
+        elif self.img_format == 'mono8':
+            self.img_pub = rospy.Publisher(self.publish_topic, Image, queue_size=1)
+        else:
+            raise AttributeError('Not a valid img_format (\'mono8\' or \'mono14\').')
+            sys.exit(-1)
 
     def __init_subscribers(self):
         # Setup subscribers
@@ -61,15 +77,26 @@ class FlirCameraNode:
         result, image_data = self.cam.acquire_image()
         if result:
             # Image acquired correctly
-            img = ThermalImage(header=Header(stamp=rospy.Time.now()))
-            img.height, img.width = image_data.shape
-            img.encoding = '14bit'
-            img.is_celcius = self.convert_to_celcius
-            img.data = image_data.flatten()
-            self.img_pub.publish(img)
+            if self.img_format == 'mono14':
+                img = ThermalImage(header=Header(stamp=rospy.Time.now()))
+                img.height, img.width = image_data.shape
+                img.encoding = 'mono14'
+                img.is_celcius = self.convert_to_celcius
+                if self.convert_to_celcius:
+                    img.data = self.cam.convert_raw_data_to_celcius(image_data).flatten()
+                else:
+                    img.data = image_data.flatten()
+                self.img_pub.publish(img)
+            elif self.img_format == 'mono8':
+                img_ori = Image(header=Header(stamp=rospy.Time.now()))
+                img_ori.height, img_ori.width = image_data.shape
+                img_ori.encoding = 'mono8'
+                img_ori.step = img_ori.width
+                img_ori.data = image_data.flatten().tolist()
+                self.img_pub.publish(img_ori)
+            
             if self.debug:
                 rospy.loginfo('Maximum temperature in frame: {}'.format(np.max(image_data)))
-                #image_data_unpacked = img.data.reshape((img.height, img.width))
                 # Draws an image on the current figure
                 plt.imshow(image_data, cmap='inferno')
                 plt.colorbar(format='%.2f')

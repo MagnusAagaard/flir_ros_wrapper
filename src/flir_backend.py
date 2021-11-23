@@ -6,9 +6,9 @@ import numpy
 _continue_recording_backend_value = True
 
 class FlirCamera:
-    def __init__(self, cam_idx=0, convert_to_celcius=True):
+    def __init__(self, cam_idx=0, img_format='mono14'):
         self.cam_idx = cam_idx
-        self.convert_to_celcius = convert_to_celcius
+        self.img_format = img_format
         self.init_success = self.__init_cams()
         print("Init done with result {}".format(self.init_success))
 
@@ -77,8 +77,6 @@ class FlirCamera:
             else:
                 # Getting the image data as a numpy array
                 image = image_result.GetNDArray()
-                if self.convert_to_celcius:
-                    image = image * 0.04 - 273.15
             #  Release image
             #
             #  *** NOTES ***
@@ -122,11 +120,22 @@ class FlirCamera:
             print('Unable to set pixel format.. Aborting...')
             return False
         node_pixel_format_mono14 = PySpin.CEnumEntryPtr(node_pixel_format.GetEntryByName('Mono14'))
-        if not PySpin.IsAvailable(node_pixel_format_mono14) or not PySpin.IsReadable(node_pixel_format_mono14):
-            print('Unable to set pixel format.. Aborting...')
-            return False
+        node_pixel_format_mono8 = PySpin.CEnumEntryPtr(node_pixel_format.GetEntryByName('Mono8'))
+        if self.img_format == 'mono8':
+            if not PySpin.IsAvailable(node_pixel_format_mono8) or not PySpin.IsReadable(node_pixel_format_mono8):
+                print('Unable to set pixel format to mono8.. Trying mono14...')
+                if not PySpin.IsAvailable(node_pixel_format_mono14) or not PySpin.IsReadable(node_pixel_format_mono14):
+                    print('Unable to set pixel format to mono14.. Aborting...')
+                    return False
+        else:
+            # Default mono14
+            if not PySpin.IsAvailable(node_pixel_format_mono14) or not PySpin.IsReadable(node_pixel_format_mono14):
+                print('Unable to set pixel format to mono14.. Aborting...')
+                return False
+        
         pixel_format_mono14 = node_pixel_format_mono14.GetValue()
-        node_pixel_format.SetIntValue(pixel_format_mono14)
+        pixel_format_mono8 = node_pixel_format_mono8.GetValue()
+        node_pixel_format.SetIntValue(pixel_format_mono8 if self.img_format == 'mono8' else pixel_format_mono14)
 
         # Set the temperature resolution to high
         node_temp_linear = PySpin.CEnumerationPtr(nodemap.GetNode('TemperatureLinearResolution'))
@@ -140,17 +149,24 @@ class FlirCamera:
         linear_high = node_temp_linear_high.GetValue()
         node_temp_linear.SetIntValue(linear_high)
 
-        # Set the CMOS bit depth to 14
+        # Set the CMOS bit depth to 14/8
         node_bit_depth = PySpin.CEnumerationPtr(nodemap.GetNode('CMOSBitDepth'))
         if not PySpin.IsAvailable(node_bit_depth) or not PySpin.IsWritable(node_bit_depth):
             print('Unable to set CMOS bit depth.. Aborting...')
             return False
         node_bit_depth_14bit = PySpin.CEnumEntryPtr(node_bit_depth.GetEntryByName('bit14bit'))
-        if not PySpin.IsAvailable(node_bit_depth_14bit) or not PySpin.IsReadable(node_bit_depth_14bit):
-            print('Unable to set CMOS bit depth.. Aborting...')
-            return False
-        bit_depth = node_bit_depth_14bit.GetValue()
-        node_bit_depth.SetIntValue(bit_depth)
+        node_bit_depth_8bit = PySpin.CEnumEntryPtr(node_bit_depth.GetEntryByName('bit8bit'))
+        if self.img_format == 'mono8':
+            if not PySpin.IsAvailable(node_bit_depth_8bit) or not PySpin.IsReadable(node_bit_depth_8bit):
+                print('Unable to set CMOS bit depth to 8 bit.. Aborting...')
+                return False
+        else:
+            if not PySpin.IsAvailable(node_bit_depth_14bit) or not PySpin.IsReadable(node_bit_depth_14bit):
+                print('Unable to set CMOS bit depth.. Aborting...')
+                return False
+        bit_depth14 = node_bit_depth_14bit.GetValue()
+        bit_depth8 = node_bit_depth_8bit.GetValue()
+        node_bit_depth.SetIntValue(bit_depth8 if self.img_format == 'mono8' else bit_depth14)
 
         # Turn on temperature linear mode
         node_temp_linear = PySpin.CEnumerationPtr(nodemap.GetNode('TemperatureLinearMode'))
@@ -204,6 +220,12 @@ class FlirCamera:
         print('Acquisition mode set to continuous...')
 
         return True
+
+    def convert_raw_data_to_celcius(self, arr):
+        '''
+        Returns numpy array with data converted from mono14 to celcius.
+        '''
+        return arr * 0.04 - 273.15
 
 
 def handle_close(evt):
