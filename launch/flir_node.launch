@@ -1,15 +1,15 @@
 <launch>
   <arg name="frame_rate"            default="30" />
   <arg name="cam_idx"               default="0" />
-  <arg name="debug"                 default="False" />
-  <arg name="to_celcius"            default="False" />
+  <arg name="debug"                 default="True" />
+  <arg name="to_celcius"            default="True" />
   <!-- Acquisition mode can either be 'continous' or 'trigger'.
   If in trigger mode, a topic is available to trigger the camera and acquire the image -->
   <arg name="acquisition_mode"      default="continous" />
   <arg name="trigger_topic"         default="~trigger_cam" />
   <arg name="publish_topic"         default="~thermal/image_raw" />
   <!-- Image format: mono14 for viable thermal data, mono8 for visualization in Rviz-->
-  <arg name="img_format"            default="mono8" />
+  <arg name="img_format"            default="mono14" />
 
   <!-- Launch Flir node Interfacer -->
   <node name="flir_node" pkg="flir_ros_wrapper" type="flir_node.py" output="screen" >

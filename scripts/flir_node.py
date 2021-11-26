@@ -83,7 +83,8 @@ class FlirCameraNode:
                 img.encoding = 'mono14'
                 img.is_celcius = self.convert_to_celcius
                 if self.convert_to_celcius:
-                    img.data = self.cam.convert_raw_data_to_celcius(image_data).flatten()
+                    image_data = self.cam.convert_raw_data_to_celcius(image_data)
+                    img.data = image_data.flatten()
                 else:
                     img.data = image_data.flatten()
                 self.img_pub.publish(img)
