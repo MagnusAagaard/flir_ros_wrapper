@@ -1,5 +1,5 @@
 # flir_ros_wrapper
-This package is a ROS wrapper for Flir Ax5 thermal cameras (e.g. A65). The package depends on Spinnaker SDK including the Python wrapper. THis has been developed and tested under Ubuntu 18.04 with ROS Melodic and Python 3.6
+This package is a ROS wrapper for Flir Ax5 thermal cameras (e.g. A65). The package depends on Spinnaker SDK including the Python wrapper. This has been developed and tested under Ubuntu 18.04 with ROS Melodic and Python 3.6
 
 ## Package use
 Note that Spinakker SDK should be setup correctly before using the package as described below under "Spinakker SDK setup".
@@ -59,8 +59,8 @@ sudo gedit /etc/sysctl.d/10-network-security.conf
 and then comment out the lines below:
 >    \# Turn on Source Address Verification in all interfaces to\
 >    \# in order to prevent some spoofing attacks.\
->    \## net.ipv4.conf.default.rp_filter=1\
->    \## net.ipv4.conf.all.rp_filter=1
+>    \#net.ipv4.conf.default.rp_filter=1\
+>    \#net.ipv4.conf.all.rp_filter=1
 
 and then reboot the computer (only for permanently disabling)
 
